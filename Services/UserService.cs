@@ -1,95 +1,98 @@
-﻿using WebApplication1.DTOs;
-using WebApplication1.Models;
-using WebApplication1.Repositories;
-using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.IdentityModel.Tokens;
+using WebApplication1.DTOs;
+using WebApplication1.Models;
+using WebApplication1.Repositories;
 
 namespace WebApplication1.Services
 {
     public class UserService : IUserService
     {
         private readonly IUserRepository _repository;
-        private readonly IConfiguration _config;
+        private readonly IConfiguration _configuration;
 
-        public UserService(IUserRepository repository, IConfiguration config)
+        public UserService(
+            IUserRepository repository,
+            IConfiguration configuration)
         {
             _repository = repository;
-            _config = config;
+            _configuration = configuration;
         }
 
-        public async Task<UserResponseDto> Register(UserRegisterDto dto)
+        public async Task<UserResponse> Register(UserRegister dto)
         {
-            if (await _repository.GetUsernameAsync(dto.Username) != null)
-                throw new Exception("Username already exists.");
+            var existingUsername =
+                await _repository.GetUsernameAsync(dto.Username);
 
-            CreatePasswordHash(dto.Password, out byte[] hash, out byte[] salt);
+            if (existingUsername != null)
+                throw new Exception("Username đã tồn tại");
+
+            var existingEmail =
+                await _repository.GetByEmailAsync(dto.Email);
+
+            if (existingEmail != null)
+                throw new Exception("Email đã tồn tại");
+
+            using var hmac = new HMACSHA512();
 
             var user = new User
             {
                 Username = dto.Username,
                 Email = dto.Email,
-                PasswordHash = hash,
-                PasswordSalt = salt,
-                Role = "Customer"
+                FullName = dto.FullName,
+                PasswordHash = hmac.ComputeHash(
+                    Encoding.UTF8.GetBytes(dto.Password)),
+                PasswordSalt = hmac.Key,
+                Role = "Farmer",
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
             };
 
             await _repository.AddAsync(user);
 
-            return new UserResponseDto
-            {
-                Id = user.Id,
-                Username = user.Username,
-                Email = user.Email,
-                Role = user.Role,
-                CreatedAt = user.CreatedAt
-            };
+            return MapToResponse(user);
         }
 
-        public async Task<string?> Login(UserLoginDto dto)
+        public async Task<string?> Login(UserLogin dto)
         {
-            var user = await _repository.GetUsernameAsync(dto.Username);
+            var user =
+                await _repository.GetUsernameAsync(dto.Username);
 
             if (user == null)
                 return null;
 
-            if (!VerifyPassword(dto.Password, user.PasswordHash, user.PasswordSalt))
+            using var hmac = new HMACSHA512(user.PasswordSalt);
+
+            var computedHash = hmac.ComputeHash(
+                Encoding.UTF8.GetBytes(dto.Password));
+
+            if (!computedHash.SequenceEqual(user.PasswordHash))
                 return null;
 
-            return CreateToken(user);
+            if (!user.IsActive)
+                return null;
+
+            return GenerateToken(user);
         }
 
-        public async Task<List<UserResponseDto>> GetUsers()
+        public async Task<List<UserResponse>> GetUsers()
         {
             var users = await _repository.GetAllAsync();
 
-            return users.Select(x => new UserResponseDto
-            {
-                Id = x.Id,
-                Username = x.Username,
-                Email = x.Email,
-                Role = x.Role,
-                CreatedAt = x.CreatedAt
-            }).ToList();
+            return users.Select(MapToResponse).ToList();
         }
 
-        public async Task<UserResponseDto?> GetUser(int id)
+        public async Task<UserResponse?> GetUser(int id)
         {
             var user = await _repository.GetByIdAsync(id);
 
             if (user == null)
                 return null;
 
-            return new UserResponseDto
-            {
-                Id = user.Id,
-                Username = user.Username,
-                Email = user.Email,
-                Role = user.Role,
-                CreatedAt = user.CreatedAt
-            };
+            return MapToResponse(user);
         }
 
         public async Task<bool> DeleteUser(int id)
@@ -100,53 +103,66 @@ namespace WebApplication1.Services
                 return false;
 
             await _repository.DeleteAsync(user);
+
             return true;
         }
 
-        private void CreatePasswordHash(string password,
-            out byte[] passwordHash,
-            out byte[] passwordSalt)
+        private UserResponse MapToResponse(User user)
         {
-            using var hmac = new HMACSHA512();
-
-            passwordSalt = hmac.Key;
-            passwordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
-        }
-
-        private bool VerifyPassword(string password,
-            byte[] hash,
-            byte[] salt)
-        {
-            using var hmac = new HMACSHA512(salt);
-
-            var computedHash = hmac.ComputeHash(
-                Encoding.UTF8.GetBytes(password));
-
-            return computedHash.SequenceEqual(hash);
-        }
-
-        private string CreateToken(User user)
-        {
-            var claims = new List<Claim>
+            return new UserResponse
             {
-                new Claim(ClaimTypes.Name,user.Username),
-                new Claim(ClaimTypes.Role,user.Role)
+                Id = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                FullName = user.FullName,
+                Role = user.Role,
+                CreatedAt = user.CreatedAt,
+                IsActive = user.IsActive
+            };
+        }
+
+        private string GenerateToken(User user)
+        {
+            var key = _configuration["Jwt:Key"];
+
+            if (string.IsNullOrEmpty(key))
+                throw new Exception("JWT Key chưa được cấu hình");
+
+            var claims = new[]
+            {
+                new Claim(
+                    ClaimTypes.NameIdentifier,
+                    user.Id.ToString()),
+
+                new Claim(
+                    ClaimTypes.Name,
+                    user.Username),
+
+                new Claim(
+                    ClaimTypes.Email,
+                    user.Email),
+
+                new Claim(
+                    ClaimTypes.Role,
+                    user.Role)
             };
 
-            var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+            var securityKey =
+                new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(key));
 
-            var creds = new SigningCredentials(
-                key,
-                SecurityAlgorithms.HmacSha512Signature);
+            var credentials =
+                new SigningCredentials(
+                    securityKey,
+                    SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
                 claims: claims,
-                expires: DateTime.Now.AddHours(12),
-                signingCredentials: creds
-            );
+                expires: DateTime.UtcNow.AddHours(24),
+                signingCredentials: credentials);
 
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            return new JwtSecurityTokenHandler()
+                .WriteToken(token);
         }
     }
 }

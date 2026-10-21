@@ -1,4 +1,5 @@
-﻿using WebApplication1.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using WebApplication1.Data;
 using WebApplication1.Models;
 
 namespace WebApplication1.Repositories
@@ -22,7 +23,7 @@ namespace WebApplication1.Repositories
             return await _context.Users.FindAsync(id);
         }
 
-        public async Task<User?> GetByUsernameAsync(string username)
+        public async Task<User?> GetUsernameAsync(string username)
         {
             return await _context.Users
                 .FirstOrDefaultAsync(x => x.Username == username);
@@ -36,7 +37,7 @@ namespace WebApplication1.Repositories
 
         public async Task AddAsync(User user)
         {
-            _context.Users.Add(user);
+            await _context.Users.AddAsync(user);
             await _context.SaveChangesAsync();
         }
 

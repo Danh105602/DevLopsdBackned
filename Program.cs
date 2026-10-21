@@ -1,48 +1,142 @@
-using Microsoft.AspNetCore.Http.HttpResults;
-using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+using System.Text;
+using WebApplication1.Data;
+using WebApplication1.Middleware;
+using WebApplication1.Repositories;
+using WebApplication1.Services;
 
-var builder = WebApplication.CreateSlimBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.ConfigureHttpJsonOptions(options =>
+// =========================
+// 1. CONTROLLERS
+// =========================
+builder.Services.AddControllers();
+
+// =========================
+// 2. DATABASE
+// =========================
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// =========================
+// 3. DEPENDENCY INJECTION
+// =========================
+
+// ----- User -----
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserService, UserService>();
+
+// ----- Farm -----
+builder.Services.AddScoped<IFarmRepository, FarmRepository>();
+builder.Services.AddScoped<IFarmService, FarmService>();
+
+// ----- Field -----
+builder.Services.AddScoped<IFieldRepository, FieldRepository>();
+builder.Services.AddScoped<IFieldService, FieldService>();
+
+// ----- Crop -----
+builder.Services.AddScoped<ICropRepository, CropRepository>();
+builder.Services.AddScoped<ICropService, CropService>();
+
+// ----- Planting -----
+builder.Services.AddScoped<IPlantingRepository, PlantingRepository>();
+builder.Services.AddScoped<IPlantingService, PlantingService>();
+
+// =========================
+// 4. JWT AUTHENTICATION
+// =========================
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(
+                    builder.Configuration["Jwt:Key"]!
+                )
+            ),
+
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true
+        };
+    });
+
+// =========================
+// 5. AUTHORIZATION
+// =========================
+builder.Services.AddAuthorization();
+
+// =========================
+// 6. SWAGGER + JWT
+// =========================
+builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddSwaggerGen(options =>
 {
-    options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Nhập JWT Token"
+    });
+
+    options.AddSecurityRequirement(document =>
+        new OpenApiSecurityRequirement
+        {
+            [new OpenApiSecuritySchemeReference(
+                "Bearer",
+                document)] = []
+        });
 });
 
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
-
+// =========================
+// 7. BUILD
+// =========================
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
+// =========================
+// 8. EXCEPTION MIDDLEWARE
+// =========================
+app.UseMiddleware<ExceptionMiddleware>();
 
-Todo[] sampleTodos =
-[
-    new(1, "Walk the dog"),
-    new(2, "Do the dishes", DateOnly.FromDateTime(DateTime.Now)),
-    new(3, "Do the laundry", DateOnly.FromDateTime(DateTime.Now.AddDays(1))),
-    new(4, "Clean the bathroom"),
-    new(5, "Clean the car", DateOnly.FromDateTime(DateTime.Now.AddDays(2)))
-];
+// =========================
+// 9. SWAGGER
+// =========================
+app.UseSwagger();
+app.UseSwaggerUI();
 
-var todosApi = app.MapGroup("/todos");
-todosApi.MapGet("/", () => sampleTodos)
-        .WithName("GetTodos");
+// =========================
+// 10. HTTPS
+// =========================
+app.UseHttpsRedirection();
 
-todosApi.MapGet("/{id}", Results<Ok<Todo>, NotFound> (int id) =>
-    sampleTodos.FirstOrDefault(a => a.Id == id) is { } todo
-        ? TypedResults.Ok(todo)
-        : TypedResults.NotFound())
-    .WithName("GetTodoById");
+// =========================
+// 11. AUTHENTICATION
+// =========================
+app.UseAuthentication();
 
+// =========================
+// 12. AUTHORIZATION
+// =========================
+app.UseAuthorization();
+
+// =========================
+// 13. CONTROLLERS
+// =========================
+app.MapControllers();
+
+// =========================
+// 14. RUN
+// =========================
 app.Run();
-
-public record Todo(int Id, string? Title, DateOnly? DueBy = null, bool IsComplete = false);
-
-[JsonSerializable(typeof(Todo[]))]
-internal partial class AppJsonSerializerContext : JsonSerializerContext
-{
-
-}
