@@ -33,6 +33,35 @@ namespace WebApplication1.Authorization
         public const string HarvestUpdate = "Harvest.Update";
         public const string HarvestDelete = "Harvest.Delete";
 
+        // CARE SCHEDULE
+        public const string CareScheduleRead = "CareSchedule.Read";
+        public const string CareScheduleCreate = "CareSchedule.Create";
+        public const string CareScheduleUpdate = "CareSchedule.Update";
+        public const string CareScheduleDelete = "CareSchedule.Delete";
+
+        // PEST INCIDENT
+        public const string PestIncidentRead = "PestIncident.Read";
+        public const string PestIncidentCreate = "PestIncident.Create";
+        public const string PestIncidentUpdate = "PestIncident.Update";
+        public const string PestIncidentDelete = "PestIncident.Delete";
+
+        // DASHBOARD
+        public const string DashboardRead = "Dashboard.Read";
+
+        // IOT
+        public const string SensorDeviceRead = "SensorDevice.Read";
+        public const string SensorDeviceCreate = "SensorDevice.Create";
+        public const string SensorDeviceUpdate = "SensorDevice.Update";
+        public const string SensorDeviceDelete = "SensorDevice.Delete";
+        public const string SensorReadingRead = "SensorReading.Read";
+        public const string AlertRuleRead = "AlertRule.Read";
+        public const string AlertRuleCreate = "AlertRule.Create";
+        public const string AlertRuleUpdate = "AlertRule.Update";
+        public const string AlertRuleDelete = "AlertRule.Delete";
+        public const string AlertRead = "Alert.Read";
+        public const string AlertUpdate = "Alert.Update";
+        public const string AlertDelete = "Alert.Delete";
+
         // USER
         public const string UserRead = "User.Read";
         public const string UserCreate = "User.Create";
@@ -46,6 +75,13 @@ namespace WebApplication1.Authorization
             CropRead, CropCreate, CropUpdate, CropDelete,
             PlantingRead, PlantingCreate, PlantingUpdate, PlantingDelete,
             HarvestRead, HarvestCreate, HarvestUpdate, HarvestDelete,
+            CareScheduleRead, CareScheduleCreate, CareScheduleUpdate, CareScheduleDelete,
+            PestIncidentRead, PestIncidentCreate, PestIncidentUpdate, PestIncidentDelete,
+            DashboardRead,
+            SensorDeviceRead, SensorDeviceCreate, SensorDeviceUpdate, SensorDeviceDelete,
+            SensorReadingRead,
+            AlertRuleRead, AlertRuleCreate, AlertRuleUpdate, AlertRuleDelete,
+            AlertRead, AlertUpdate, AlertDelete,
             UserRead, UserCreate, UserUpdate, UserDelete
         ];
     }
@@ -80,7 +116,21 @@ namespace WebApplication1.Authorization
                     Permissions.HarvestRead,
                     Permissions.HarvestCreate,
                     Permissions.HarvestUpdate,
-                    Permissions.HarvestDelete
+                    Permissions.CareScheduleRead,
+                    Permissions.CareScheduleCreate,
+                    Permissions.CareScheduleUpdate,
+                    Permissions.CareScheduleDelete,
+                    Permissions.PestIncidentRead,
+                    Permissions.PestIncidentCreate,
+                    Permissions.PestIncidentUpdate,
+                    Permissions.DashboardRead,
+                    Permissions.SensorDeviceRead,
+                    Permissions.SensorReadingRead,
+                    Permissions.AlertRuleRead,
+                    Permissions.AlertRuleCreate,
+                    Permissions.AlertRuleUpdate,
+                    Permissions.AlertRead,
+                    Permissions.AlertUpdate
                 ];
             }
 

@@ -2,6 +2,7 @@ using WebApplication1.DTOs.AuditLogs;
 using WebApplication1.DTOs.Common;
 using WebApplication1.Models;
 using WebApplication1.Repositories;
+using System.Security.Claims;
 
 namespace WebApplication1.Services
 {
@@ -11,15 +12,40 @@ namespace WebApplication1.Services
             AuditLogQueryParameters query);
 
         Task<AuditLogResponseDto?> GetByIdAsync(int id);
+
+        Task RecordReadAsync(string entityName, int entityId, bool isList = false);
     }
 
     public class AuditLogService : IAuditLogService
     {
         private readonly IAuditLogRepository _repository;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public AuditLogService(IAuditLogRepository repository)
+        public AuditLogService(IAuditLogRepository repository, IHttpContextAccessor httpContextAccessor)
         {
             _repository = repository;
+            _httpContextAccessor = httpContextAccessor;
+        }
+
+        public Task RecordReadAsync(string entityName, int entityId, bool isList = false)
+        {
+            var context = _httpContextAccessor.HttpContext;
+            var user = context?.User;
+            var userId = int.TryParse(user?.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedId)
+                ? parsedId
+                : (int?)null;
+
+            return _repository.AddAsync(new AuditLog
+            {
+                UserId = userId,
+                Username = user?.FindFirstValue(ClaimTypes.Name) ?? "Anonymous",
+                Role = user?.FindFirstValue(ClaimTypes.Role) ?? "Unknown",
+                Action = isList ? "READ_LIST" : "READ",
+                EntityName = entityName,
+                EntityId = entityId,
+                Timestamp = DateTime.UtcNow,
+                IpAddress = context?.Connection.RemoteIpAddress?.ToString()
+            });
         }
 
         public async Task<PagedResult<AuditLogResponseDto>> GetAllAsync(

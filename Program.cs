@@ -88,6 +88,30 @@ try
     builder.Services.AddScoped<IHarvestRepository, HarvestRepository>();
     builder.Services.AddScoped<IHarvestService, HarvestService>();
 
+    // CARE SCHEDULE
+    builder.Services.AddScoped<ICareScheduleRepository, CareScheduleRepository>();
+    builder.Services.AddScoped<ICareScheduleService, CareScheduleService>();
+
+    // PEST INCIDENT
+    builder.Services.AddScoped<IPestIncidentRepository, PestIncidentRepository>();
+    builder.Services.AddScoped<IPestIncidentService, PestIncidentService>();
+
+    // DASHBOARD
+    builder.Services.AddScoped<IDashboardService, DashboardService>();
+
+    // IOT
+    builder.Services.AddScoped<ISensorDeviceService, SensorDeviceService>();
+    builder.Services.AddScoped<ISensorTelemetryService, SensorTelemetryService>();
+    builder.Services.AddScoped<IAlertService, AlertService>();
+    builder.Services.AddScoped<ISensorMaintenanceService, SensorMaintenanceService>();
+    builder.Services.AddSingleton<SensorDeviceRateLimiter>();
+    builder.Services.AddSingleton<SensorRealtimePublisher>();
+    builder.Services.AddHostedService<SensorRealtimePublisher>(
+        provider => provider.GetRequiredService<SensorRealtimePublisher>());
+    builder.Services.AddHostedService<SensorRetentionWorker>();
+    builder.Services.AddHostedService<SensorOfflineAlertWorker>();
+    builder.Services.AddSignalR();
+
     // FILE
     builder.Services.AddScoped<IFileRepository, FileRepository>();
     builder.Services.AddScoped<IFileService, FileService>();
@@ -130,6 +154,22 @@ try
         })
         .AddJwtBearer(options =>
         {
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    var accessToken = context.Request.Query["access_token"];
+                    var requestPath = context.HttpContext.Request.Path;
+                    if (!string.IsNullOrEmpty(accessToken) &&
+                        requestPath.StartsWithSegments("/hubs/farms"))
+                    {
+                        context.Token = accessToken;
+                    }
+
+                    return Task.CompletedTask;
+                }
+            };
+
             options.TokenValidationParameters =
                 new TokenValidationParameters
                 {
@@ -269,6 +309,7 @@ try
     // ========================================
 
     app.MapControllers();
+    app.MapHub<WebApplication1.Hubs.FarmHub>("/hubs/farms");
 
     // ========================================
     // 17. APPLICATION START

@@ -8,7 +8,7 @@ namespace WebApplication1.DTOs.Harvest
         [Required]
         public DateTime HarvestDate { get; set; }
 
-        [Range(0.01, 100000000)]
+        [Range(0.01, 100000)]
         public double QuantityKg { get; set; }
 
         [MaxLength(30)]

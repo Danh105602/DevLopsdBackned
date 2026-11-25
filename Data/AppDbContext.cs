@@ -28,6 +28,13 @@ namespace WebApplication1.Data
         public DbSet<Planting> Plantings { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<Harvest> Harvests { get; set; }
+        public DbSet<CareSchedule> CareSchedules { get; set; }
+        public DbSet<PestIncident> PestIncidents { get; set; }
+        public DbSet<SensorDevice> SensorDevices { get; set; }
+        public DbSet<SensorReading> SensorReadings { get; set; }
+        public DbSet<SensorReadingAggregate> SensorReadingAggregates { get; set; }
+        public DbSet<AlertRule> AlertRules { get; set; }
+        public DbSet<Alert> Alerts { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -91,6 +98,80 @@ namespace WebApplication1.Data
                     .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasIndex(h => h.PlantingId);
+            });
+
+            modelBuilder.Entity<CareSchedule>(entity =>
+            {
+                entity.Property(c => c.CreatedAt)
+                    .HasDefaultValueSql("GETUTCDATE()");
+
+                entity.HasOne(c => c.Planting)
+                    .WithMany(p => p.CareSchedules)
+                    .HasForeignKey(c => c.PlantingId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(c => new { c.PlantingId, c.ScheduledDate });
+            });
+
+            modelBuilder.Entity<PestIncident>(entity =>
+            {
+                entity.Property(p => p.CreatedAt)
+                    .HasDefaultValueSql("GETUTCDATE()");
+
+                entity.HasOne(p => p.Planting)
+                    .WithMany(p => p.PestIncidents)
+                    .HasForeignKey(p => p.PlantingId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(p => new { p.PlantingId, p.DetectedDate });
+                entity.HasIndex(p => new { p.Severity, p.Status });
+            });
+
+            modelBuilder.Entity<SensorDevice>(entity =>
+            {
+                entity.Property(d => d.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+                entity.HasIndex(d => d.DeviceCode).IsUnique();
+                entity.HasIndex(d => d.ApiKeyHash).IsUnique();
+                entity.HasOne(d => d.Field).WithMany(f => f.SensorDevices)
+                    .HasForeignKey(d => d.FieldId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<SensorReading>(entity =>
+            {
+                entity.HasIndex(r => new { r.SensorDeviceId, r.MeasuredAtUtc });
+                entity.HasIndex(r => new { r.SensorDeviceId, r.MessageId }).IsUnique();
+                entity.HasOne(r => r.SensorDevice).WithMany(d => d.Readings)
+                    .HasForeignKey(r => r.SensorDeviceId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<SensorReadingAggregate>(entity =>
+            {
+                entity.HasIndex(a => new { a.SensorDeviceId, a.BucketStartUtc }).IsUnique();
+                entity.HasOne(a => a.SensorDevice).WithMany()
+                    .HasForeignKey(a => a.SensorDeviceId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<AlertRule>(entity =>
+            {
+                entity.Property(r => r.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+                entity.HasIndex(r => new { r.FieldId, r.Metric }).IsUnique();
+                entity.HasOne(r => r.Field).WithMany(f => f.AlertRules)
+                    .HasForeignKey(r => r.FieldId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<Alert>(entity =>
+            {
+                entity.Property(a => a.TriggeredAtUtc).HasDefaultValueSql("GETUTCDATE()");
+                entity.HasIndex(a => new { a.AlertRuleId, a.SensorDeviceId })
+                    .IsUnique().HasFilter("[Status] <> 'Resolved'");
+                entity.HasIndex(a => new { a.SensorDeviceId, a.TriggeredAtUtc });
+                entity.HasIndex(a => a.Status);
+                entity.HasOne(a => a.AlertRule).WithMany(r => r.Alerts)
+                    .HasForeignKey(a => a.AlertRuleId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(a => a.SensorDevice).WithMany()
+                    .HasForeignKey(a => a.SensorDeviceId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(a => a.SensorReading).WithMany()
+                    .HasForeignKey(a => a.SensorReadingId).OnDelete(DeleteBehavior.SetNull);
             });
 
             // AUDIT LOG (không có khóa ngoại, log tồn tại độc lập)
@@ -219,7 +300,7 @@ namespace WebApplication1.Data
             // ChangeTracker.Entries() tự gọi DetectChanges
             foreach (var entry in ChangeTracker.Entries().ToList())
             {
-                if (entry.Entity is not (Farm or Field or Crop or Planting or Harvest))
+                if (entry.Entity is not (Farm or Field or Crop or Planting or Harvest or CareSchedule or PestIncident or SensorDevice or AlertRule or Alert))
                     continue;
 
                 if (entry.State is not (EntityState.Added
@@ -272,6 +353,9 @@ namespace WebApplication1.Data
                 if (property.Metadata.IsPrimaryKey())
                     continue;
 
+                if (entry.Entity is SensorDevice && property.Metadata.Name == nameof(SensorDevice.ApiKeyHash))
+                    continue;
+
                 if (onlyModified && !property.IsModified)
                     continue;
 
@@ -292,6 +376,11 @@ namespace WebApplication1.Data
             Crop crop => crop.Id,
             Planting planting => planting.Id,
             Harvest harvest => harvest.Id,
+            CareSchedule careSchedule => careSchedule.Id,
+            PestIncident pestIncident => pestIncident.Id,
+            SensorDevice sensorDevice => sensorDevice.Id,
+            AlertRule alertRule => alertRule.Id,
+            Alert alert => alert.Id,
             _ => 0
         };
     }

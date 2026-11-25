@@ -24,5 +24,9 @@ namespace WebApplication1.Models
         public Farm? Farm { get; set; } = null!;
 
         public ICollection<Planting> Plantings { get; set; } = new List<Planting>();
+
+        public ICollection<SensorDevice> SensorDevices { get; set; } = new List<SensorDevice>();
+
+        public ICollection<AlertRule> AlertRules { get; set; } = new List<AlertRule>();
     }
 }

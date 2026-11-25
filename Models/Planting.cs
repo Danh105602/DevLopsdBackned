@@ -21,5 +21,9 @@ namespace WebApplication1.Models
         public Field? Field { get; set; } = null!;
 
         public Crop? Crop { get; set; } = null!;
+
+        public ICollection<CareSchedule> CareSchedules { get; set; } = new List<CareSchedule>();
+
+        public ICollection<PestIncident> PestIncidents { get; set; } = new List<PestIncident>();
     }
 }

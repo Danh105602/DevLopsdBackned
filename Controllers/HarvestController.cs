@@ -101,6 +101,13 @@ namespace WebApplication1.Controllers
                     "Bạn không có quyền tạo thu hoạch cho vụ trồng này");
             }
 
+            if (!await _ownership.PlantingExistsAsync(dto.PlantingId))
+                return NotFound();
+
+            var createDateError = await ValidateHarvestDate(dto.PlantingId, dto.HarvestDate);
+            if (createDateError != null)
+                return BadRequest(new { message = createDateError });
+
             var harvest = new Harvest
             {
                 PlantingId = dto.PlantingId,
@@ -145,6 +152,10 @@ namespace WebApplication1.Controllers
                     "Bạn không có quyền sửa bản ghi thu hoạch này");
             }
 
+            var updateDateError = await ValidateHarvestDate(existing.PlantingId, dto.HarvestDate);
+            if (updateDateError != null)
+                return BadRequest(new { message = updateDateError });
+
             var harvest = new Harvest
             {
                 HarvestDate = dto.HarvestDate,
@@ -163,7 +174,7 @@ namespace WebApplication1.Controllers
 
         // DELETE: api/Harvest/{id}
         [HttpDelete("{id}")]
-        [Authorize(Policy = Permissions.HarvestDelete)]
+        [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> Delete(int id)
         {
             if (!TryGetUserId(out var userId))
@@ -194,6 +205,20 @@ namespace WebApplication1.Controllers
             {
                 message = "Xóa bản ghi thu hoạch thành công"
             });
+        }
+
+        private async Task<string?> ValidateHarvestDate(int plantingId, DateTime harvestDate)
+        {
+            if (harvestDate.Date > DateTime.UtcNow.Date)
+                return "Harvest date cannot be in the future.";
+
+            var plantingDate = await _ownership.GetPlantingDateAsync(plantingId);
+            if (plantingDate == null)
+                return "Planting was not found.";
+            if (harvestDate.Date < plantingDate.Value.Date)
+                return "Harvest date cannot be before the planting date.";
+
+            return null;
         }
 
         private bool TryGetUserId(out int userId)

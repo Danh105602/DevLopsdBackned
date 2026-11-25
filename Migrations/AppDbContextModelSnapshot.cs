@@ -22,6 +22,116 @@ namespace WebApplication1.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("WebApplication1.Models.Alert", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AlertRuleId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("LastNotifiedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("ResolvedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("SeenAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("SensorDeviceId")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("SensorReadingId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("TriggeredAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SensorReadingId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("AlertRuleId", "SensorDeviceId")
+                        .IsUnique()
+                        .HasFilter("[Status] <> 'Resolved'");
+
+                    b.HasIndex("SensorDeviceId", "TriggeredAtUtc");
+
+                    b.ToTable("Alerts");
+                });
+
+            modelBuilder.Entity("WebApplication1.Models.AlertRule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ConsecutiveReadings")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CooldownMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<int>("FieldId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("LowerThreshold")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Metric")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal?>("UpperThreshold")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FieldId", "Metric")
+                        .IsUnique();
+
+                    b.ToTable("AlertRules");
+                });
+
             modelBuilder.Entity("WebApplication1.Models.AuditLog", b =>
                 {
                     b.Property<int>("Id")
@@ -78,6 +188,50 @@ namespace WebApplication1.Migrations
                     b.HasIndex("EntityName", "EntityId");
 
                     b.ToTable("AuditLogs");
+                });
+
+            modelBuilder.Entity("WebApplication1.Models.CareSchedule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("PlantingId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ScheduledDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("TaskType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlantingId", "ScheduledDate");
+
+                    b.ToTable("CareSchedules");
                 });
 
             modelBuilder.Entity("WebApplication1.Models.Crop", b =>
@@ -218,6 +372,62 @@ namespace WebApplication1.Migrations
                     b.ToTable("Harvests");
                 });
 
+            modelBuilder.Entity("WebApplication1.Models.PestIncident", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<DateTime>("DetectedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("PestName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("PlantingId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ResolutionDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Treatment")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlantingId", "DetectedDate");
+
+                    b.HasIndex("Severity", "Status");
+
+                    b.ToTable("PestIncidents");
+                });
+
             modelBuilder.Entity("WebApplication1.Models.Planting", b =>
                 {
                     b.Property<int>("Id")
@@ -289,6 +499,176 @@ namespace WebApplication1.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("RefreshTokens");
+                });
+
+            modelBuilder.Entity("WebApplication1.Models.SensorDevice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ApiKeyHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("DeviceCode")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<int>("FieldId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastSeenAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApiKeyHash")
+                        .IsUnique();
+
+                    b.HasIndex("DeviceCode")
+                        .IsUnique();
+
+                    b.HasIndex("FieldId");
+
+                    b.ToTable("SensorDevices");
+                });
+
+            modelBuilder.Entity("WebApplication1.Models.SensorReading", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal?>("AirHumidityPercent")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("MeasuredAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("MessageId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal?>("PH")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("ReceivedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("SensorDeviceId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("SoilMoisturePercent")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("TemperatureC")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SensorDeviceId", "MeasuredAtUtc");
+
+                    b.HasIndex("SensorDeviceId", "MessageId")
+                        .IsUnique();
+
+                    b.ToTable("SensorReadings");
+                });
+
+            modelBuilder.Entity("WebApplication1.Models.SensorReadingAggregate", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal?>("AirHumidityAverage")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("AirHumidityCount")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("AirHumidityMaximum")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("AirHumidityMinimum")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("BucketStartUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("PHAverage")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("PHCount")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("PHMaximum")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("PHMinimum")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("ReadingCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SensorDeviceId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("SoilMoistureAverage")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("SoilMoistureCount")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("SoilMoistureMaximum")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("SoilMoistureMinimum")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("TemperatureAverage")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("TemperatureCount")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("TemperatureMaximum")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("TemperatureMinimum")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SensorDeviceId", "BucketStartUtc")
+                        .IsUnique();
+
+                    b.ToTable("SensorReadingAggregates");
                 });
 
             modelBuilder.Entity("WebApplication1.Models.StoredFile", b =>
@@ -369,6 +749,54 @@ namespace WebApplication1.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("WebApplication1.Models.Alert", b =>
+                {
+                    b.HasOne("WebApplication1.Models.AlertRule", "AlertRule")
+                        .WithMany("Alerts")
+                        .HasForeignKey("AlertRuleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("WebApplication1.Models.SensorDevice", "SensorDevice")
+                        .WithMany()
+                        .HasForeignKey("SensorDeviceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("WebApplication1.Models.SensorReading", "SensorReading")
+                        .WithMany()
+                        .HasForeignKey("SensorReadingId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("AlertRule");
+
+                    b.Navigation("SensorDevice");
+
+                    b.Navigation("SensorReading");
+                });
+
+            modelBuilder.Entity("WebApplication1.Models.AlertRule", b =>
+                {
+                    b.HasOne("WebApplication1.Models.Field", "Field")
+                        .WithMany("AlertRules")
+                        .HasForeignKey("FieldId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Field");
+                });
+
+            modelBuilder.Entity("WebApplication1.Models.CareSchedule", b =>
+                {
+                    b.HasOne("WebApplication1.Models.Planting", "Planting")
+                        .WithMany("CareSchedules")
+                        .HasForeignKey("PlantingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Planting");
+                });
+
             modelBuilder.Entity("WebApplication1.Models.Farm", b =>
                 {
                     b.HasOne("WebApplication1.Models.User", "Owner")
@@ -395,6 +823,17 @@ namespace WebApplication1.Migrations
                 {
                     b.HasOne("WebApplication1.Models.Planting", "Planting")
                         .WithMany()
+                        .HasForeignKey("PlantingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Planting");
+                });
+
+            modelBuilder.Entity("WebApplication1.Models.PestIncident", b =>
+                {
+                    b.HasOne("WebApplication1.Models.Planting", "Planting")
+                        .WithMany("PestIncidents")
                         .HasForeignKey("PlantingId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -430,6 +869,44 @@ namespace WebApplication1.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("WebApplication1.Models.SensorDevice", b =>
+                {
+                    b.HasOne("WebApplication1.Models.Field", "Field")
+                        .WithMany("SensorDevices")
+                        .HasForeignKey("FieldId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Field");
+                });
+
+            modelBuilder.Entity("WebApplication1.Models.SensorReading", b =>
+                {
+                    b.HasOne("WebApplication1.Models.SensorDevice", "SensorDevice")
+                        .WithMany("Readings")
+                        .HasForeignKey("SensorDeviceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SensorDevice");
+                });
+
+            modelBuilder.Entity("WebApplication1.Models.SensorReadingAggregate", b =>
+                {
+                    b.HasOne("WebApplication1.Models.SensorDevice", "SensorDevice")
+                        .WithMany()
+                        .HasForeignKey("SensorDeviceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SensorDevice");
+                });
+
+            modelBuilder.Entity("WebApplication1.Models.AlertRule", b =>
+                {
+                    b.Navigation("Alerts");
+                });
+
             modelBuilder.Entity("WebApplication1.Models.Crop", b =>
                 {
                     b.Navigation("Plantings");
@@ -442,7 +919,23 @@ namespace WebApplication1.Migrations
 
             modelBuilder.Entity("WebApplication1.Models.Field", b =>
                 {
+                    b.Navigation("AlertRules");
+
                     b.Navigation("Plantings");
+
+                    b.Navigation("SensorDevices");
+                });
+
+            modelBuilder.Entity("WebApplication1.Models.Planting", b =>
+                {
+                    b.Navigation("CareSchedules");
+
+                    b.Navigation("PestIncidents");
+                });
+
+            modelBuilder.Entity("WebApplication1.Models.SensorDevice", b =>
+                {
+                    b.Navigation("Readings");
                 });
 
             modelBuilder.Entity("WebApplication1.Models.User", b =>

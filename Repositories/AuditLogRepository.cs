@@ -11,6 +11,8 @@ namespace WebApplication1.Repositories
             AuditLogQueryParameters query);
 
         Task<AuditLog?> GetByIdAsync(int id);
+
+        Task AddAsync(AuditLog log);
     }
 
     public class AuditLogRepository : IAuditLogRepository
@@ -74,6 +76,12 @@ namespace WebApplication1.Repositories
             return await _context.AuditLogs
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == id);
+        }
+
+        public async Task AddAsync(AuditLog log)
+        {
+            _context.AuditLogs.Add(log);
+            await _context.SaveChangesAsync();
         }
     }
 }
