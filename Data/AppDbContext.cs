@@ -27,6 +27,7 @@ namespace WebApplication1.Data
         public DbSet<Crop> Crops { get; set; }
         public DbSet<Planting> Plantings { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
+        public DbSet<Harvest> Harvests { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -79,6 +80,17 @@ namespace WebApplication1.Data
                     .WithMany()
                     .HasForeignKey(x => x.UserId)
                     .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // PLANTING -> HARVEST (không sửa model Planting)
+            modelBuilder.Entity<Harvest>(entity =>
+            {
+                entity.HasOne(h => h.Planting)
+                    .WithMany()
+                    .HasForeignKey(h => h.PlantingId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(h => h.PlantingId);
             });
 
             // AUDIT LOG (không có khóa ngoại, log tồn tại độc lập)
@@ -207,7 +219,7 @@ namespace WebApplication1.Data
             // ChangeTracker.Entries() tự gọi DetectChanges
             foreach (var entry in ChangeTracker.Entries().ToList())
             {
-                if (entry.Entity is not (Farm or Field or Crop or Planting))
+                if (entry.Entity is not (Farm or Field or Crop or Planting or Harvest))
                     continue;
 
                 if (entry.State is not (EntityState.Added
@@ -279,6 +291,7 @@ namespace WebApplication1.Data
             Field field => field.Id,
             Crop crop => crop.Id,
             Planting planting => planting.Id,
+            Harvest harvest => harvest.Id,
             _ => 0
         };
     }

@@ -181,6 +181,43 @@ namespace WebApplication1.Migrations
                     b.ToTable("Fields");
                 });
 
+            modelBuilder.Entity("WebApplication1.Models.Harvest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("HarvestDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("PlantingId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Quality")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<double>("QuantityKg")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlantingId");
+
+                    b.ToTable("Harvests");
+                });
+
             modelBuilder.Entity("WebApplication1.Models.Planting", b =>
                 {
                     b.Property<int>("Id")
@@ -352,6 +389,17 @@ namespace WebApplication1.Migrations
                         .IsRequired();
 
                     b.Navigation("Farm");
+                });
+
+            modelBuilder.Entity("WebApplication1.Models.Harvest", b =>
+                {
+                    b.HasOne("WebApplication1.Models.Planting", "Planting")
+                        .WithMany()
+                        .HasForeignKey("PlantingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Planting");
                 });
 
             modelBuilder.Entity("WebApplication1.Models.Planting", b =>

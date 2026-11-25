@@ -84,6 +84,10 @@ try
     builder.Services.AddScoped<IPlantingRepository, PlantingRepository>();
     builder.Services.AddScoped<IPlantingService, PlantingService>();
 
+    // HARVEST
+    builder.Services.AddScoped<IHarvestRepository, HarvestRepository>();
+    builder.Services.AddScoped<IHarvestService, HarvestService>();
+
     // FILE
     builder.Services.AddScoped<IFileRepository, FileRepository>();
     builder.Services.AddScoped<IFileService, FileService>();

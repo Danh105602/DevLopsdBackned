@@ -27,6 +27,12 @@ namespace WebApplication1.Authorization
         public const string PlantingUpdate = "Planting.Update";
         public const string PlantingDelete = "Planting.Delete";
 
+        // HARVEST
+        public const string HarvestRead = "Harvest.Read";
+        public const string HarvestCreate = "Harvest.Create";
+        public const string HarvestUpdate = "Harvest.Update";
+        public const string HarvestDelete = "Harvest.Delete";
+
         // USER
         public const string UserRead = "User.Read";
         public const string UserCreate = "User.Create";
@@ -39,6 +45,7 @@ namespace WebApplication1.Authorization
             FieldRead, FieldCreate, FieldUpdate, FieldDelete,
             CropRead, CropCreate, CropUpdate, CropDelete,
             PlantingRead, PlantingCreate, PlantingUpdate, PlantingDelete,
+            HarvestRead, HarvestCreate, HarvestUpdate, HarvestDelete,
             UserRead, UserCreate, UserUpdate, UserDelete
         ];
     }
@@ -68,7 +75,12 @@ namespace WebApplication1.Authorization
                     Permissions.PlantingRead,
                     Permissions.PlantingCreate,
                     Permissions.PlantingUpdate,
-                    Permissions.PlantingDelete
+                    Permissions.PlantingDelete,
+
+                    Permissions.HarvestRead,
+                    Permissions.HarvestCreate,
+                    Permissions.HarvestUpdate,
+                    Permissions.HarvestDelete
                 ];
             }
 
